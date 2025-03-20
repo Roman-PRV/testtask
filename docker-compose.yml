@@ -1,0 +1,66 @@
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - "8011:9000"
+    volumes:
+      - ./backend:/var/www/html
+      - vendor:/var/www/html/vendor
+    #      - ./laravel-backend/storage:/var/www/html/storage
+    #      - ./laravel-backend/bootstrap/cache:/var/www/html/bootstrap/cache
+    networks:
+      - laravel-network
+    depends_on:
+      - mysql
+    environment:
+      - DB_HOST=mysql
+
+  mysql:
+    image: mysql:8.0
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+    ports:
+      - "3311:3306"
+    volumes:
+      - ./mysql/data:/var/lib/mysql
+    networks:
+      - laravel-network
+
+  nginx:
+    build:
+      context: ./nginx
+    ports:
+      - "80:80"
+    volumes:
+      - ./backend:/var/www/html
+    networks:
+      - laravel-network
+    depends_on:
+      - backend
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./frontend:/usr/src/app
+      - /usr/src/app/node_modules
+    networks:
+      - laravel-network
+    depends_on:
+      - backend
+
+networks:
+  laravel-network:
+    driver: bridge
+
+volumes:
+  vendor:
